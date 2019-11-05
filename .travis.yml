@@ -1,0 +1,36 @@
+sudo: true
+
+language: bash
+
+services:
+  - docker
+
+env:
+  global:
+    - DEBIAN_FRONTEND="noninteractive"
+
+jobs:
+  include:
+    - stage: Build and deploy
+      if: (NOT (type IN (pull_request))) AND (tag IS blank)
+      script:
+        # Build image to create custom initrd
+        - export KERNEL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}')
+        - docker build --no-cache -f Dockerfile --build-arg KERNEL_VERSION=${KERNEL_VERSION} -t kernel .
+        # Build the release contents
+        - mkdir -p buildout
+        - docker run --rm -it -v $(pwd)/buildout:/buildout kernel
+      before_deploy:
+        # Set up git user name and tag this commit
+        - git config --local user.name $GIT_USERNAME
+        - git config --local user.email $GIT_EMAIL
+        - export TRAVIS_TAG=${KERNEL_VERSION}-$(echo ${TRAVIS_COMMIT} | cut -c1-8)-${TRAVIS_JOB_NUMBER}
+        - git tag $TRAVIS_TAG
+      deploy:
+        provider: releases
+        api_key: $GITHUB_TOKEN
+        file_glob: true
+        file: buildout/*
+        skip_cleanup: true
+        on:
+          branch: master
