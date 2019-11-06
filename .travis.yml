@@ -15,7 +15,8 @@ jobs:
       if: (NOT (type IN (pull_request))) AND (tag IS blank)
       script:
         # Build image to create custom initrd
-        - export KERNEL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}')
+        - |
+          export KERNEL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}')
         - docker build --no-cache -f Dockerfile --build-arg KERNEL_VERSION=${KERNEL_VERSION} -t kernel .
         # Build the release contents
         - mkdir -p buildout
