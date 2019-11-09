@@ -7,31 +7,38 @@ services:
 
 env:
   global:
+    - BRANCH="master"
+    - GITHUB_ENDPOINT="netbootxyz/ubuntu-core-19.10"
     - DEBIAN_FRONTEND="noninteractive"
+    - BUILD_TYPE="custom_kernel"
 
-jobs:
-  include:
-    - stage: Build and deploy
-      if: (NOT (type IN (pull_request))) AND (tag IS blank)
-      script:
-        # Build image to create custom initrd
-        - |
-          export KERNEL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}')
-        - docker build --no-cache -f Dockerfile --build-arg KERNEL_VERSION=${KERNEL_VERSION} -t kernel .
-        # Build the release contents
-        - mkdir -p buildout
-        - docker run --rm -it -v $(pwd)/buildout:/buildout kernel
-      before_deploy:
-        # Set up git user name and tag this commit
-        - git config --local user.name $GIT_USERNAME
-        - git config --local user.email $GIT_EMAIL
-        - export TRAVIS_TAG=${KERNEL_VERSION}-$(echo ${TRAVIS_COMMIT} | cut -c1-8)-${TRAVIS_JOB_NUMBER}
-        - git tag $TRAVIS_TAG
-      deploy:
-        provider: releases
-        api_key: $GITHUB_TOKEN
-        file_glob: true
-        file: buildout/*
-        skip_cleanup: true
-        on:
-          branch: master
+branches:
+  only:
+    - 'master'
+if: type != pull_request AND tag IS blank
+script:
+  - |
+    export EXTERNAL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}')
+  - wget https://raw.githubusercontent.com/netbootxyz/build-pipelines/master/build.sh && chmod +x build.sh
+  - git config --local user.name $GIT_USERNAME
+  - git config --local user.email $GIT_EMAIL
+  - export TRAVIS_TAG=${EXTERNAL_VERSION}-$(echo ${TRAVIS_COMMIT} | cut -c1-8)
+  - ./build.sh compare ${TRAVIS_TAG} || travis_terminate 0
+  - ./build.sh build ${BUILD_TYPE}
+before_deploy:
+# Tag this commit for release
+  - git tag ${TRAVIS_TAG}
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file_glob: true
+  file: buildout/*
+  skip_cleanup: true
+  on:
+    branch: $BRANCH
+after_deploy:
+  - ./build.sh endpoints $TRAVIS_TAG
+after_success:
+  - ./build.sh discord success
+after_failure: 
+  - ./build.sh discord failure

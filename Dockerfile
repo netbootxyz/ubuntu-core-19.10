@@ -1,7 +1,7 @@
 FROM ubuntu:eoan
 
 # versioning
-ARG KERNEL_VERSION
+ARG EXTERNAL_VERSION
 
 # environment settings
 ARG DEBIAN_FRONTEND="noninteractive"
@@ -27,11 +27,11 @@ RUN \
  patch /usr/share/initramfs-tools/scripts/casper < /patch && \
  patch /usr/share/initramfs-tools/scripts/casper-bottom/24preseed < /preseed-patch && \
  echo "**** install kernel ****" && \
- if [ -z ${KERNEL_VERSION+x} ]; then \
-	KERNEL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}');\
+ if [ -z ${EXTERNAL_VERSION+x} ]; then \
+	EXTERNAL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}');\
  fi && \
  apt-get install -y \
-	linux-image-virtual=${KERNEL_VERSION} && \
+	linux-image-virtual=${EXTERNAL_VERSION} && \
  echo "**** clean up ****" && \
  mkdir /buildout && \
  rm -rf \

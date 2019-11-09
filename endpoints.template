@@ -1,0 +1,6 @@
+endpoints:
+  ubuntu-19.10-live-kernel:
+    path: /ubuntu-core-19.10/releases/download/REPLACE_RELEASE_NAME/
+    files:
+    - initrd
+    - vmlinuz
