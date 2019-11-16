@@ -1,6 +1,6 @@
 --- casper	2019-10-14 15:29:05.000000000 +0000
-+++ casper.new	2019-11-03 17:01:51.825405059 +0000
-@@ -255,16 +255,10 @@
++++ casper.new	2019-11-16 08:06:42.842294433 +0000
+@@ -255,16 +255,13 @@
  
  do_urlmount() {
      rc=1
@@ -12,12 +12,13 @@
 -
 -    if wget "${URL}" -O "${target}"; then
 -        mount -o ro "${target}" "${mountpoint}" && rc=0
--    fi
--
 +    mkdir -p ${mountpoint}
 +    mount -t tmpfs -o size=`/bin/wget ${URL} --spider --server-response -O - 2>&1 | sed -ne '/Content-Length/{s/.*: //;p}'` tmpfs ${mountpoint}
 +    mkdir -p ${mountpoint}/casper
 +    if /bin/wget --progress=bar:force:noscroll ${URL} -O ${mountpoint}/casper/root.squashfs; then rc=0; fi
++    if [ ! -z "$(/bin/wget -q --spider -S --max-redirect 0 "${URL}".part2 2>&1 >/dev/null | grep "200 OK\|302 Found" || :)" ]; then
++        if /bin/wget --progress=bar:force:noscroll ${URL}.part2 -O ->> ${mountpoint}/casper/root.squashfs; then rc=0; fi
+     fi
+-
      return ${rc}
- }
- 
+ } 
