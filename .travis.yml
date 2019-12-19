@@ -8,9 +8,9 @@ services:
 env:
   global:
     - BRANCH="master"
-    - GITHUB_ENDPOINT="netbootxyz/ubuntu-core-19.10"
+    - GITHUB_ENDPOINT="netbootxyz/ubuntu-core-18.04"
     - DEBIAN_FRONTEND="noninteractive"
-    - BUILD_TYPE="custom_kernel"
+    - BUILD_TYPE="initrd_patch"
 
 branches:
   only:
@@ -18,7 +18,7 @@ branches:
 if: type != pull_request AND tag IS blank
 script:
   - |
-    export EXTERNAL_VERSION=$(curl -sX GET http://archive.ubuntu.com/ubuntu/dists/eoan/main/binary-amd64/Packages.gz | gunzip -c |grep -A 7 -m 1 "Package: linux-image-virtual" | awk -F ": " '/Version/{print $2;exit}')
+    export EXTERNAL_VERSION="19.10"
   - wget https://raw.githubusercontent.com/netbootxyz/build-pipelines/master/build.sh && chmod +x build.sh
   - git config --local user.name $GIT_USERNAME
   - git config --local user.email $GIT_EMAIL
