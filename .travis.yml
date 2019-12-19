@@ -8,7 +8,7 @@ services:
 env:
   global:
     - BRANCH="master"
-    - GITHUB_ENDPOINT="netbootxyz/ubuntu-core-18.04"
+    - GITHUB_ENDPOINT="netbootxyz/ubuntu-core-19.10"
     - DEBIAN_FRONTEND="noninteractive"
     - BUILD_TYPE="initrd_patch"
 
